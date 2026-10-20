@@ -28,6 +28,9 @@ import type {
   CurrentUserResponse,
   DeliveryZone,
   DeliveryZonePagination,
+  DeliveryRule,
+  DeliveryRuleInput,
+  DeliveryRulePagination,
   PaymentSettingsData,
   PaymentSettingsUpdateInput,
   ProfileUser,
@@ -147,6 +150,59 @@ class SettingsClient {
       { isActive }
     );
     return this.unwrap(response).zone;
+  }
+
+  // Delivery rule endpoints (simplified flat list)
+  private static readonly RULES = "/delivery-rules/management/delivery-rules";
+
+  /** GET /delivery-rules/management/delivery-rules — list delivery rules. */
+  async getDeliveryRules(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    isActive?: boolean;
+    sortBy?: string;
+    sortOrder?: string;
+  }): Promise<{ items: DeliveryRule[]; pagination?: DeliveryRulePagination }> {
+    const response = await apiClient.get<
+      ApiEnvelope<{ items: DeliveryRule[]; pagination?: DeliveryRulePagination }>
+    >(SettingsClient.RULES, params ? { params } : undefined);
+    return this.unwrap(response);
+  }
+
+  /** POST /delivery-rules/management/delivery-rules — create a delivery rule. */
+  async createDeliveryRule(input: DeliveryRuleInput): Promise<DeliveryRule> {
+    const response = await apiClient.post<ApiEnvelope<{ rule: DeliveryRule }>>(
+      SettingsClient.RULES,
+      input
+    );
+    return this.unwrap(response).rule;
+  }
+
+  /** PATCH /delivery-rules/management/delivery-rules/:id — update a delivery rule. */
+  async updateDeliveryRule(
+    id: string,
+    input: DeliveryRuleInput
+  ): Promise<DeliveryRule> {
+    const response = await apiClient.patch<ApiEnvelope<{ rule: DeliveryRule }>>(
+      `${SettingsClient.RULES}/${id}`,
+      input
+    );
+    return this.unwrap(response).rule;
+  }
+
+  /** DELETE /delivery-rules/management/delivery-rules/:id — delete a delivery rule. */
+  async deleteDeliveryRule(id: string): Promise<void> {
+    await apiClient.delete<ApiEnvelope<unknown>>(`${SettingsClient.RULES}/${id}`);
+  }
+
+  /** PATCH /delivery-rules/management/delivery-rules/:id/toggle — toggle status. */
+  async toggleDeliveryRule(id: string, isActive: boolean): Promise<DeliveryRule> {
+    const response = await apiClient.patch<ApiEnvelope<{ rule: DeliveryRule }>>(
+      `${SettingsClient.RULES}/${id}/toggle`,
+      { isActive }
+    );
+    return this.unwrap(response).rule;
   }
 }
 

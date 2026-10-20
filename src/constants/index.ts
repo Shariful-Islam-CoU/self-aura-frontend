@@ -17,6 +17,7 @@ export const ROUTES = {
   RETURNS: "/returns",
   COURIERS: "/couriers",
   SHIPMENTS: "/shipments",
+  REVIEWS: "/reviews",
   REPORTS: "/reports",
   SETTINGS: "/settings",
 } as const;
@@ -129,6 +130,7 @@ export const API_ENDPOINTS = {
   RETURNS: "/returns",
   COURIERS: "/couriers",
   SHIPMENTS: "/shipments",
+  REVIEWS: "/management/reviews",
   REPORTS: "/reports",
   SETTINGS: "/settings",
 } as const;

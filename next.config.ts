@@ -93,7 +93,7 @@ function readRemoteImagePatterns(): RemotePattern[] {
     }
   };
 
-  addFromUrl(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api");
+  addFromUrl(process.env.NEXT_PUBLIC_API_URL ?? "https://self-aura-backend.onrender.com/api");
 
   for (const entry of (process.env.NEXT_PUBLIC_MEDIA_HOSTS ?? "").split(",")) {
     const trimmed = entry.trim();

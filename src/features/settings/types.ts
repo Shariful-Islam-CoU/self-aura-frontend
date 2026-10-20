@@ -266,3 +266,37 @@ export interface UpdateDeliveryZoneInput {
   priority?: number;
   sortOrder?: number;
 }
+
+/**
+ * Delivery rule (simplified) - flat list of named options with prices.
+ * No geographic matching; customer self-selects at checkout.
+ */
+export interface DeliveryRule {
+  _id: string;
+  name: string;
+  price: number;
+  estimatedMinDays: number;
+  estimatedMaxDays: number;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Delivery rule area input for create/update. */
+export interface DeliveryRuleInput {
+  name: string;
+  price: number;
+  estimatedMinDays: number;
+  estimatedMaxDays: number;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+/** Pagination envelope returned by the backend list controllers. */
+export interface DeliveryRulePagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}

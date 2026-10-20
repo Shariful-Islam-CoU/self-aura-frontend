@@ -9,7 +9,10 @@ export interface CustomerAddress {
   phone?: string;
   addressLine: string;
   area?: string;
-  city: string;
+  /** Required: the district is what delivery pricing resolves against. */
+  district: string;
+  /** Optional: descriptive only, so a district alone is enough. */
+  city?: string;
   postalCode?: string;
   country?: string;
   isDefault: boolean;
@@ -21,6 +24,7 @@ export interface Customer {
   phone: string;
   alternatePhone?: string;
   email?: string;
+  avatarUrl?: string | null;
   facebookName?: string | null;
   facebookProfileUrl?: string | null;
   addresses: CustomerAddress[];
@@ -49,7 +53,8 @@ export interface CustomerAddressInput {
   phone?: string;
   addressLine: string;
   area?: string;
-  city: string;
+  district: string;
+  city?: string;
   postalCode?: string;
   country?: string;
   isDefault: boolean;
@@ -60,6 +65,7 @@ export interface CreateCustomerInput {
   phone: string;
   alternatePhone?: string;
   email?: string;
+  avatarUrl?: string | null;
   facebookName?: string | null;
   facebookProfileUrl?: string | null;
   addresses?: CustomerAddressInput[];
@@ -73,6 +79,7 @@ export interface UpdateCustomerInput {
   phone?: string;
   alternatePhone?: string | null;
   email?: string | null;
+  avatarUrl?: string | null;
   facebookName?: string | null;
   facebookProfileUrl?: string | null;
   addresses?: CustomerAddressInput[] | null;

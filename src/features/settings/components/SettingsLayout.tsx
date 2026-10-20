@@ -15,7 +15,7 @@
 // smaller screens, full-width content.
 
 import { ComponentType, useState } from "react";
-import { User, Lock, Palette, Building2, Server, ShieldAlert, Wallet, Truck } from "lucide-react";
+import { User, Lock, Palette, Building2, Server, ShieldAlert, Wallet, Truck, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/AuthProvider";
 import { ProfileSettings } from "./ProfileSettings";
@@ -23,8 +23,9 @@ import { SecuritySettings } from "./SecuritySettings";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { BusinessSettings } from "./BusinessSettings";
 import { PaymentSettings } from "./PaymentSettings";
+import { SocialSettings } from "./SocialSettings";
 import { SystemSettings } from "./SystemSettings";
-import { DeliveryZoneSettings } from "./DeliveryZoneSettings";
+import { DeliveryRuleSettings } from "./DeliveryRuleSettings";
 import { SettingsDangerZone } from "./SettingsDangerZone";
 
 interface SettingsSectionDef {
@@ -72,11 +73,18 @@ const SECTIONS: SettingsSectionDef[] = [
     Component: PaymentSettings,
   },
   {
-    id: "delivery-zones",
-    label: "Delivery Zones",
-    description: "Where you deliver and for how much",
+    id: "social",
+    label: "Social",
+    description: "Facebook, Instagram and Messenger links",
+    icon: Share2,
+    Component: SocialSettings,
+  },
+  {
+    id: "delivery-rules",
+    label: "Delivery Rules",
+    description: "Delivery charge options for checkout",
     icon: Truck,
-    Component: DeliveryZoneSettings,
+    Component: DeliveryRuleSettings,
   },
   {
     id: "system",
@@ -101,7 +109,7 @@ export function SettingsLayout() {
   // section that would only render a 403. Editing gates live inside sections.
   const { canAccess } = useAuth();
   const visibleSections = SECTIONS.filter((section) =>
-    section.id === "delivery-zones" ? canAccess("deliveryZones.view") : true
+    section.id === "delivery-rules" ? canAccess("deliveryRules.view") : true
   );
 
   const [activeId, setActiveId] = useState(visibleSections[0]?.id ?? "profile");

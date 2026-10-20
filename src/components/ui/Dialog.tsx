@@ -155,10 +155,20 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
     useEffect(() => {
       if (!open) return;
       const handleClickOutside = (e: MouseEvent) => {
+        const target = e.target as Node;
+        // Portaled floating UI (combobox dropdowns, menus) lives outside the
+        // dialog's DOM node by design, so a plain containment check would
+        // treat a click on an option as a click on the backdrop and dismiss
+        // the dialog mid-selection. Elements mark themselves with
+        // data-dialog-portal to opt out.
+        const inPortaledPopup =
+          target instanceof Element &&
+          target.closest("[data-dialog-portal]") !== null;
+        if (inPortaledPopup) return;
         if (
           contentRef.current &&
-          !contentRef.current.contains(e.target as Node) &&
-          !triggerRef.current?.contains(e.target as Node)
+          !contentRef.current.contains(target) &&
+          !triggerRef.current?.contains(target)
         ) {
           setOpen(false);
         }

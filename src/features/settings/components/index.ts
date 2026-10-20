@@ -10,5 +10,6 @@ export { AppearanceSettings } from "./AppearanceSettings";
 export { SecuritySettings } from "./SecuritySettings";
 export { BusinessSettings } from "./BusinessSettings";
 export { PaymentSettings } from "./PaymentSettings";
+export { SocialSettings } from "./SocialSettings";
 export { SystemSettings } from "./SystemSettings";
 export { SettingsDangerZone } from "./SettingsDangerZone";

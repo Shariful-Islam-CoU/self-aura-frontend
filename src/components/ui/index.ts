@@ -19,3 +19,4 @@ export { ErrorState } from "./ErrorState";
 export { ThemeToggle } from "./ThemeToggle";
 export { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "./Breadcrumb";
 export { Pagination } from "./Pagination";
+export { Avatar } from "./Avatar";

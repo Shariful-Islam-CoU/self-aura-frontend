@@ -74,7 +74,7 @@ export interface OrderShippingAddress {
   addressLine: string;
   area?: string;
   district?: string;
-  city: string;
+  city?: string;
   postalCode?: string;
   country?: string;
 }
@@ -217,8 +217,9 @@ export interface OrderShippingAddressInput {
   addressLine: string;
   area?: string;
   /** Matched against delivery zones by the backend; required. */
-  district?: string;
-  city: string;
+  district: string;
+  /** Optional descriptive text - the district alone identifies the location. */
+  city?: string;
   postalCode?: string;
   country?: string;
 }

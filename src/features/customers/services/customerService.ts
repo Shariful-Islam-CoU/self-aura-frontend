@@ -4,6 +4,9 @@
 //   GET    /customers/:id      - single customer
 //   POST   /customers          - create (any authenticated role)
 //   PATCH  /customers/:id      - update (any authenticated role)
+//   PATCH  /customers/:id/avatar - update avatar URL (any authenticated role)
+//   POST   /customers/:id/avatar - upload avatar file (any authenticated role)
+//   DELETE /customers/:id/avatar - delete avatar (any authenticated role)
 //   DELETE /customers/:id      - soft deactivate (owner/manager only)
 //   GET    /reports/customers  - backend-computed customer totals
 
@@ -60,6 +63,29 @@ class CustomerService {
     const response = await apiClient.patch<ApiEnvelope<{ customer: Customer }>>(
       `${this.basePath}/${id}`,
       input
+    );
+    return response.data.customer;
+  }
+
+  async updateCustomerAvatarUrl(id: string, avatarUrl: string | null): Promise<Customer> {
+    const response = await apiClient.patch<ApiEnvelope<{ customer: Customer }>>(
+      `${this.basePath}/${id}/avatar`,
+      { avatarUrl }
+    );
+    return response.data.customer;
+  }
+
+  async uploadCustomerAvatar(id: string, formData: FormData): Promise<Customer> {
+    const response = await apiClient.upload<ApiEnvelope<{ customer: Customer }>>(
+      `${this.basePath}/${id}/avatar`,
+      formData
+    );
+    return response.data.customer;
+  }
+
+  async deleteCustomerAvatar(id: string): Promise<Customer> {
+    const response = await apiClient.delete<ApiEnvelope<{ customer: Customer }>>(
+      `${this.basePath}/${id}/avatar`
     );
     return response.data.customer;
   }

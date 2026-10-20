@@ -85,11 +85,13 @@ export function OrderForm({ isSubmitting, onSubmit, onCancel }: OrderFormProps) 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerSearching, setCustomerSearching] = useState(false);
+  const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [productQuery, setProductQuery] = useState("");
   const [productSearching, setProductSearching] = useState(false);
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
 
   const [items, setItems] = useState<DraftOrderItem[]>([]);
   const [values, setValues] = useState<OrderFormValues>({
@@ -102,16 +104,20 @@ export function OrderForm({ isSubmitting, onSubmit, onCancel }: OrderFormProps) 
   const [formError, setFormError] = useState<string | null>(null);
 
   // Server-side customer search (active customers only - the backend rejects
-  // inactive customers at order creation).
+  // inactive customers at order creation). Searches only run while the picker
+  // is open, and an empty query still loads active customers - the picker
+  // promises "show all active" on focus, so focusing must not show an empty
+  // state when customers exist. No debounce is needed for the empty query
+  // (there is no typing to coalesce).
   useEffect(() => {
+    if (!customerPickerOpen) return;
     const query = customerQuery.trim();
-    if (!query) return;
     let cancelled = false;
     const timer = window.setTimeout(async () => {
       setCustomerSearching(true);
       try {
         const data = await customerService.listCustomers({
-          search: query,
+          search: query || undefined,
           limit: 8,
           isActive: true,
         });
@@ -121,23 +127,24 @@ export function OrderForm({ isSubmitting, onSubmit, onCancel }: OrderFormProps) 
       } finally {
         if (!cancelled) setCustomerSearching(false);
       }
-    }, 350);
+    }, query ? 350 : 0);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [customerQuery]);
+  }, [customerQuery, customerPickerOpen]);
 
-  // Server-side product search (active products only).
+  // Server-side product search (active products only) - same contract as the
+  // customer picker: fetch while open, show all active products on focus.
   useEffect(() => {
+    if (!productPickerOpen) return;
     const query = productQuery.trim();
-    if (!query) return;
     let cancelled = false;
     const timer = window.setTimeout(async () => {
       setProductSearching(true);
       try {
         const data = await productService.listProducts({
-          search: query,
+          search: query || undefined,
           limit: 8,
           isActive: true,
         });
@@ -147,19 +154,19 @@ export function OrderForm({ isSubmitting, onSubmit, onCancel }: OrderFormProps) 
       } finally {
         if (!cancelled) setProductSearching(false);
       }
-    }, 350);
+    }, query ? 350 : 0);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [productQuery]);
+  }, [productQuery, productPickerOpen]);
 
   const applyCustomerAddress = (customer: Customer) => {
     const address = customer.addresses?.find((entry) => entry.isDefault) ?? customer.addresses?.[0];
     if (!address) return;
     // Only prefill when the user has not already typed a shipping address.
     const current = values.shippingAddress;
-    if (current.addressLine.trim() || current.city.trim()) return;
+    if (current.addressLine.trim() || current.district.trim()) return;
     setValues((prev) => ({
       ...prev,
       shippingAddress: {
@@ -167,10 +174,10 @@ export function OrderForm({ isSubmitting, onSubmit, onCancel }: OrderFormProps) 
         phone: address.phone ?? "",
         addressLine: address.addressLine,
         area: address.area ?? "",
-        // Customer records do not carry a district, and delivery can only be
-        // resolved from one - never guess it from the area or city.
-        district: prev.shippingAddress.district,
-        city: address.city,
+        // A saved address now carries the district delivery is priced from. It
+        // is copied as-is and never guessed from the area or city.
+        district: address.district ?? prev.shippingAddress.district,
+        city: address.city ?? "",
         postalCode: address.postalCode ?? "",
         country: address.country ?? "Bangladesh",
       },
@@ -187,16 +194,18 @@ export function OrderForm({ isSubmitting, onSubmit, onCancel }: OrderFormProps) 
 
   const handleCustomerQueryChange = (query: string) => {
     setCustomerQuery(query);
-    if (query.trim() === "") setCustomers([]);
+    // Clearing the text does not clear the options: the open effect refetches
+    // active customers for the empty query, and keeping the previous results
+    // until then avoids a false "no records" flash mid-typing.
     if (query !== selectedCustomer?.name) {
       setSelectedCustomer(null);
       setErrors((prev) => ({ ...prev, customer: undefined }));
+      setFormError(null);
     }
   };
 
   const handleProductQueryChange = (query: string) => {
     setProductQuery(query);
-    if (query.trim() === "") setProducts([]);
   };
 
   const handleAddProduct = (product: Product) => {
@@ -298,9 +307,9 @@ export function OrderForm({ isSubmitting, onSubmit, onCancel }: OrderFormProps) 
     } else if (address.district.trim().length > 100) {
       next.district = "District must be at most 100 characters";
     }
-    if (!address.city.trim()) {
-      next.city = "City is required";
-    } else if (address.city.trim().length > 100) {
+    // City is optional descriptive text: a district already identifies the
+    // delivery location.
+    if (address.city.trim().length > 100) {
       next.city = "City must be at most 100 characters";
     }
     if (address.recipientName.trim().length > 100) {
@@ -365,7 +374,7 @@ export function OrderForm({ isSubmitting, onSubmit, onCancel }: OrderFormProps) 
         addressLine: address.addressLine.trim(),
         area: address.area.trim() || undefined,
         district: address.district.trim(),
-        city: address.city.trim(),
+        city: address.city.trim() || undefined,
         postalCode: address.postalCode.trim() || undefined,
         country: address.country.trim() || undefined,
       },
@@ -450,7 +459,8 @@ export function OrderForm({ isSubmitting, onSubmit, onCancel }: OrderFormProps) 
           const customer = customers.find((candidate) => candidate.id === option.id);
           if (customer) handleSelectCustomer(customer);
         }}
-        isSearching={customerSearching}
+        isSearching={customerSearching && customerPickerOpen}
+        onOpenChange={setCustomerPickerOpen}
         disabled={isSubmitting}
         error={errors.customer}
         emptyText="No customers found. Add the customer in the Customers module first."
@@ -463,7 +473,8 @@ export function OrderForm({ isSubmitting, onSubmit, onCancel }: OrderFormProps) 
         products={products}
         productQuery={productQuery}
         onProductQueryChange={handleProductQueryChange}
-        isSearchingProducts={productSearching}
+        isSearchingProducts={productSearching && productPickerOpen}
+        onProductPickerOpenChange={setProductPickerOpen}
         onAddProduct={handleAddProduct}
         onRemoveItem={handleRemoveItem}
         onQuantityChange={handleQuantityChange}
@@ -551,11 +562,10 @@ export function OrderForm({ isSubmitting, onSubmit, onCancel }: OrderFormProps) 
           <Input
             id="order-city"
             label="City"
-            required
             value={values.shippingAddress.city}
             onChange={(event) => updateShippingField("city", event.target.value)}
             error={errors.city}
-            placeholder="City"
+            placeholder="Optional"
           />
           <Input
             id="order-postal-code"

@@ -167,8 +167,10 @@ export function ShipmentDetails({
           </p>
           <p className="text-sm text-muted-foreground">
             {address.addressLine}
-            {address.area ? `, ${address.area}` : ""}, {address.city},{" "}
-            {address.postalCode}, {address.country}
+            {[address.district || address.area, address.city, address.postalCode, address.country]
+              .filter(Boolean)
+              .map((part) => `, ${part}`)
+              .join("")}
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
             Snapshot of the order&apos;s address taken by the server at creation

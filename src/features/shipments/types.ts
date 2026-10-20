@@ -40,6 +40,7 @@ export interface ShippingAddressResponse {
   phone: string;
   addressLine: string;
   area: string;
+  district: string;
   city: string;
   postalCode: string;
   country: string;

@@ -16,6 +16,8 @@ interface OrderItemsEditorProps {
   productQuery: string;
   onProductQueryChange: (query: string) => void;
   isSearchingProducts: boolean;
+  /** Reports the product picker's open state so the parent can search while open. */
+  onProductPickerOpenChange: (open: boolean) => void;
   onAddProduct: (product: Product) => void;
   onRemoveItem: (key: string) => void;
   onQuantityChange: (key: string, value: string) => void;
@@ -29,6 +31,7 @@ export function OrderItemsEditor({
   productQuery,
   onProductQueryChange,
   isSearchingProducts,
+  onProductPickerOpenChange,
   onAddProduct,
   onRemoveItem,
   onQuantityChange,
@@ -150,6 +153,7 @@ export function OrderItemsEditor({
           if (product) onAddProduct(product);
         }}
         isSearching={isSearchingProducts}
+        onOpenChange={onProductPickerOpenChange}
         disabled={isSubmitting}
         emptyText={emptyText}
         helperText="Only active products with stock can be ordered."

@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/Badge";
 import { Separator } from "@/components/ui/Separator";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Avatar } from "@/components/ui/Avatar";
 import { MapPin, Phone, Mail, StickyNote, History, ArrowRight, User, Globe } from "lucide-react";
 import { formatDateTime } from "@/lib/dateUtils";
 import type { Customer, CustomerAddress } from "../types";
@@ -25,9 +26,9 @@ function AddressCard({ address }: { address: CustomerAddress }) {
       <address className="mt-1 text-sm not-italic text-muted-foreground">
         {address.recipientName && <p className="font-medium text-foreground">{address.recipientName}</p>}
         <p>{address.addressLine}</p>
-        {(address.area || address.city) && (
+        {(address.district || address.area || address.city) && (
           <p>
-            {[address.area, address.city].filter(Boolean).join(", ")}
+            {[address.district, address.area, address.city].filter(Boolean).join(", ")}
           </p>
         )}
         {(address.postalCode || address.country) && (
@@ -54,11 +55,14 @@ export function CustomerDetails({ open, customer, onOpenChange }: CustomerDetail
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="xl" className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex flex-wrap items-center gap-2">
-            <DialogTitle>{customer.name}</DialogTitle>
-            <Badge variant={customer.isActive ? "success" : "secondary"}>
-              {customer.isActive ? "Active" : "Inactive"}
-            </Badge>
+          <div className="flex flex-wrap items-center gap-3">
+            <Avatar src={customer.avatarUrl} name={customer.name} size="lg" />
+            <div>
+              <DialogTitle>{customer.name}</DialogTitle>
+              <Badge variant={customer.isActive ? "success" : "secondary"}>
+                {customer.isActive ? "Active" : "Inactive"}
+              </Badge>
+            </div>
           </div>
           <DialogDescription>Customer profile</DialogDescription>
         </DialogHeader>

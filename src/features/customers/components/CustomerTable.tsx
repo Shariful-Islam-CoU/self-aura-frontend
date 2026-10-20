@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/Table";
 import { Skeleton } from "@/components/ui/LoadingState";
 import { Badge } from "@/components/ui/Badge";
+import { Avatar } from "@/components/ui/Avatar";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -125,9 +126,7 @@ export function CustomerTable({
               <TableRow key={customer.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                      {initials(customer.name)}
-                    </div>
+                    <Avatar src={customer.avatarUrl} name={customer.name} size="sm" />
                     <div className="min-w-0">
                       <button
                         type="button"
@@ -150,8 +149,9 @@ export function CustomerTable({
                     <>
                       <p className="truncate text-sm">{address.addressLine}</p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {address.city}
-                        {address.area ? `, ${address.area}` : ""}
+                        {[address.district, address.area, address.city]
+                          .filter(Boolean)
+                          .join(", ")}
                       </p>
                     </>
                   ) : (

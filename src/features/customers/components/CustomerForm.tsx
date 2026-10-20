@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { Avatar } from "@/components/ui/Avatar";
 import { ApiError } from "@/lib/api";
-import { MapPinPlus, Trash2 } from "lucide-react";
+import { MapPinPlus, Trash2, Camera, X } from "lucide-react";
+import { customerService } from "../services/customerService";
 import type {
   CreateCustomerInput,
   Customer,
@@ -24,6 +26,7 @@ interface AddressFormValues {
   phone: string;
   addressLine: string;
   area: string;
+  district: string;
   city: string;
   postalCode: string;
   country: string;
@@ -40,6 +43,9 @@ interface CustomerFormValues {
   tags: string;
   notes: string;
   addresses: AddressFormValues[];
+  avatarUrl: string | null;
+  avatarPreview: string | null;
+  isGoogleAvatar: boolean;
 }
 
 interface FieldErrors {
@@ -52,6 +58,7 @@ interface FieldErrors {
   tags?: string;
   notes?: string;
   addresses?: string;
+  avatar?: string;
 }
 
 interface CustomerFormProps {
@@ -68,6 +75,7 @@ const emptyAddress = (): AddressFormValues => ({
   phone: "",
   addressLine: "",
   area: "",
+  district: "",
   city: "",
   postalCode: "",
   country: "",
@@ -91,6 +99,7 @@ const isBlankAddress = (address: AddressFormValues): boolean =>
   !address.phone.trim() &&
   !address.addressLine.trim() &&
   !address.area.trim() &&
+  !address.district.trim() &&
   !address.city.trim() &&
   !address.postalCode.trim() &&
   !address.country.trim();
@@ -118,16 +127,22 @@ export function CustomerForm({
           phone: address.phone ?? "",
           addressLine: address.addressLine,
           area: address.area ?? "",
-          city: address.city,
+          district: address.district ?? "",
+          city: address.city ?? "",
           postalCode: address.postalCode ?? "",
           country: address.country ?? "",
           isDefault: address.isDefault,
         }))
       : [],
+    avatarUrl: initialValues?.avatarUrl ?? null,
+    avatarPreview: null,
+    isGoogleAvatar: !!initialValues?.avatarUrl && initialValues.avatarUrl.includes("googleusercontent.com"),
   });
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [addressErrors, setAddressErrors] = useState<(string | null)[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const updateField = <K extends keyof CustomerFormValues>(
     field: K,
@@ -258,8 +273,10 @@ export function CustomerForm({
         message = "Address line must be at most 200 characters";
       } else if (address.area.trim().length > 100) {
         message = "Area must be at most 100 characters";
-      } else if (!address.city.trim()) {
-        message = "City is required";
+      } else if (!address.district.trim()) {
+        message = "District is required";
+      } else if (address.district.trim().length > 100) {
+        message = "District must be at most 100 characters";
       } else if (address.city.trim().length > 100) {
         message = "City must be at most 100 characters";
       } else if (address.postalCode.trim().length > 20) {
@@ -283,6 +300,75 @@ export function CustomerForm({
     }
 
     return errors;
+  };
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      setFieldErrors((prev) => ({ ...prev, avatar: "Invalid file type. Please upload JPEG, PNG, or WebP image." }));
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setFieldErrors((prev) => ({ ...prev, avatar: "File too large. Maximum size is 5MB." }));
+      return;
+    }
+
+    setAvatarUploading(true);
+    setFieldErrors((prev) => ({ ...prev, avatar: undefined }));
+
+    // Create preview
+    const previewUrl = URL.createObjectURL(file);
+    setValues((prev) => ({ ...prev, avatarPreview: previewUrl }));
+
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+      const result = await customerService.uploadCustomerAvatar(
+        initialValues?.id || "",
+        formData
+      );
+      setValues((prev) => ({
+        ...prev,
+        avatarUrl: result.avatarUrl ?? null,
+        avatarPreview: null,
+        isGoogleAvatar: false,
+      }));
+    } catch (err: any) {
+      setFieldErrors((prev) => ({ ...prev, avatar: err.message || "Failed to upload avatar" }));
+      setValues((prev) => ({ ...prev, avatarPreview: null }));
+    } finally {
+      setAvatarUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!initialValues?.id) return;
+
+    setAvatarUploading(true);
+    setFieldErrors((prev) => ({ ...prev, avatar: undefined }));
+
+    try {
+      const result = await customerService.deleteCustomerAvatar(initialValues.id);
+      setValues((prev) => ({
+        ...prev,
+        avatarUrl: null,
+        avatarPreview: null,
+        isGoogleAvatar: false,
+      }));
+    } catch (err: any) {
+      setFieldErrors((prev) => ({ ...prev, avatar: err.message || "Failed to remove avatar" }));
+    } finally {
+      setAvatarUploading(false);
+    }
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -309,7 +395,8 @@ export function CustomerForm({
       phone: address.phone.trim() || undefined,
       addressLine: address.addressLine.trim(),
       area: address.area.trim() || undefined,
-      city: address.city.trim(),
+      district: address.district.trim(),
+      city: address.city.trim() || undefined,
       postalCode: address.postalCode.trim() || undefined,
       country: address.country.trim() || undefined,
       isDefault: address.isDefault,
@@ -350,6 +437,7 @@ export function CustomerForm({
         setAddressErrors(
           values.addresses.map((_, index) =>
             serverErrors[`addresses.${index}.addressLine`]?.[0] ??
+            serverErrors[`addresses.${index}.district`]?.[0] ??
             serverErrors[`addresses.${index}.city`]?.[0] ??
             serverErrors[`addresses.${index}.label`]?.[0] ??
             serverErrors[`addresses.${index}.phone`]?.[0] ??
@@ -390,6 +478,73 @@ export function CustomerForm({
           {formError}
         </div>
       )}
+
+      {/* Avatar Section */}
+      <div className="space-y-3">
+        <label className="text-sm font-label text-foreground">Profile Picture</label>
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <Avatar
+              src={values.avatarPreview || values.avatarUrl}
+              name={values.name}
+              size="lg"
+            />
+            {mode === "edit" && (
+              <label
+                htmlFor="avatar-upload"
+                className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors cursor-pointer"
+                title="Change avatar"
+              >
+                <Camera className="h-4 w-4" />
+              </label>
+            )}
+          </div>
+          <div className="flex flex-col gap-2">
+            <input
+              ref={fileInputRef}
+              id="avatar-upload"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleAvatarChange}
+              className="hidden"
+              disabled={avatarUploading}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarUploading}
+            >
+              {avatarUploading ? "Uploading..." : "Upload new"}
+            </Button>
+            {values.avatarUrl && (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveAvatar}
+                  disabled={avatarUploading || isSubmitting}
+                >
+                  <X className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                  Remove
+                </Button>
+                {values.isGoogleAvatar && (
+                  <p className="text-xs text-muted-foreground">
+                    Current: Google profile picture
+                  </p>
+                )}
+              </>
+            )}
+            {fieldErrors.avatar && (
+              <p className="text-sm text-destructive" role="alert">
+                {fieldErrors.avatar}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Input
@@ -559,6 +714,14 @@ export function CustomerForm({
                     />
                   </div>
                   <Input
+                    aria-label={`Address ${index + 1} district`}
+                    label="District"
+                    required
+                    value={address.district}
+                    onChange={(event) => updateAddress(index, "district", event.target.value)}
+                    placeholder="e.g. Dhaka"
+                  />
+                  <Input
                     aria-label={`Address ${index + 1} area`}
                     label="Area / locality"
                     value={address.area}
@@ -568,10 +731,9 @@ export function CustomerForm({
                   <Input
                     aria-label={`Address ${index + 1} city`}
                     label="City"
-                    required
                     value={address.city}
                     onChange={(event) => updateAddress(index, "city", event.target.value)}
-                    placeholder="City"
+                    placeholder="Optional"
                   />
                   <Input
                     aria-label={`Address ${index + 1} postal code`}
